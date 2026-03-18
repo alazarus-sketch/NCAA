@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RealVest CRM</title>
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; display: flex; min-height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 230px; min-height: 100vh; background: #1a1a2e;
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100;
+}
+.logo {
+  padding: 22px 20px; border-bottom: 1px solid #2d2d4e;
+  font-size: 1.15rem; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon { font-size: 1.4rem; }
+.nav-links { list-style: none; padding: 12px 0; }
+.nav-links li a {
+  display: block; padding: 13px 20px; color: #a0a0c0;
+  text-decoration: none; font-size: 0.95rem; border-left: 3px solid transparent; transition: all 0.2s;
+}
+.nav-links li a:hover, .nav-links li a.active { background: #2d2d4e; color: #fff; border-left-color: #6c63ff; }
+
+/* ── Main ── */
+.main { margin-left: 230px; flex: 1; padding: 32px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-size: 1.6rem; font-weight: 700; }
+
+/* ── Stats ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-bottom: 28px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 22px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.stat-label { font-size: 0.78rem; color: #888; text-transform: uppercase; letter-spacing: .05em; }
+.stat-value { font-size: 1.7rem; font-weight: 700; margin-top: 6px; }
+.stat-sub { font-size: 0.8rem; color: #6c63ff; margin-top: 4px; }
+
+/* ── Dashboard tables ── */
+.dashboard-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .dashboard-tables { grid-template-columns: 1fr; } }
+
+/* ── Card ── */
+.card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow-x: auto; }
+.card h2 { font-size: 1rem; margin-bottom: 16px; color: #444; }
+
+/* ── Filters ── */
+.filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.filters input, .filters select {
+  padding: 9px 14px; border: 1px solid #dde; border-radius: 8px;
+  font-size: 0.9rem; background: #fff; flex: 1; min-width: 180px;
+}
+
+/* ── Tables ── */
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+thead th {
+  text-align: left; padding: 10px 12px; background: #f7f8fc;
+  color: #666; font-weight: 600; border-bottom: 2px solid #eee; white-space: nowrap;
+}
+tbody td { padding: 11px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+tbody tr:hover { background: #fafbff; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ── Badges ── */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+.badge-active    { background: #e8f5e9; color: #2e7d32; }
+.badge-inactive  { background: #fce4ec; color: #c62828; }
+.badge-prospect  { background: #fff3e0; color: #e65100; }
+.badge-owned     { background: #e3f2fd; color: #1565c0; }
+.badge-sold      { background: #f3e5f5; color: #6a1b9a; }
+.badge-under-contract { background: #fff8e1; color: #f57f17; }
+.badge-residential { background: #e8f5e9; color: #2e7d32; }
+.badge-commercial  { background: #e3f2fd; color: #1565c0; }
+.badge-industrial  { background: #fce4ec; color: #c62828; }
+.badge-land        { background: #fff3e0; color: #e65100; }
+.badge-individual  { background: #f3e5f5; color: #6a1b9a; }
+.badge-institutional { background: #e8f5e9; color: #1b5e20; }
+.badge-fund        { background: #e3f2fd; color: #0d47a1; }
+
+/* ── Buttons ── */
+.btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; }
+.btn-primary { background: #6c63ff; color: #fff; }
+.btn-primary:hover { background: #574fd6; }
+.btn-secondary { background: #eee; color: #444; }
+.btn-secondary:hover { background: #ddd; }
+.btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+.btn-danger { background: #fce4ec; color: #c62828; }
+.btn-danger:hover { background: #f8bbd0; }
+.btn-edit { background: #f3e5f5; color: #6a1b9a; }
+.btn-edit:hover { background: #e1bee7; }
+.action-btns { display: flex; gap: 6px; }
+
+/* ── Overlay / Modal / Drawer ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; backdrop-filter: blur(2px); }
+.modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  z-index: 300; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.modal-wide { max-width: 760px; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px 0; margin-bottom: 20px; }
+.modal-header h2 { font-size: 1.2rem; }
+.modal-footer { padding: 20px 26px 26px; display: flex; justify-content: flex-end; gap: 10px; }
+.btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #888; padding: 4px; }
+.btn-close:hover { color: #333; }
+
+/* ── Form ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 26px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full-width { grid-column: 1 / -1; }
+.form-group label { font-size: 0.82rem; font-weight: 600; color: #555; }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 9px 12px; border: 1px solid #dde; border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: #6c63ff; box-shadow: 0 0 0 3px rgba(108,99,255,.1);
+}
+
+/* ── Drawer ── */
+.drawer {
+  position: fixed; top: 0; right: 0; width: 480px; height: 100vh;
+  background: #fff; z-index: 300; box-shadow: -4px 0 30px rgba(0,0,0,.15);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fff;
+}
+.drawer-header h2 { font-size: 1.2rem; }
+.drawer-body { padding: 24px; }
+.detail-section { margin-bottom: 28px; }
+.detail-section h3 {
+  font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #eee;
+}
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.detail-item label { font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 3px; }
+.detail-item span { font-weight: 600; font-size: 0.95rem; }
+
+.hidden { display: none !important; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 999;
+  background: #1a1a2e; color: #fff; padding: 12px 20px; border-radius: 10px;
+  font-size: 0.88rem; box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  transition: opacity 0.3s;
+}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo"><span class="logo-icon">🏠</span><span class="logo-text">RealVest CRM</span></div>
+  <ul class="nav-links">
+    <li><a href="#" data-page="dashboard" class="active">📊 Dashboard</a></li>
+    <li><a href="#" data-page="investors">👥 Investors</a></li>
+    <li><a href="#" data-page="properties">🏗 Properties</a></li>
+  </ul>
+</nav>
+
+<main class="main">
+
+  <!-- Dashboard -->
+  <section id="page-dashboard" class="page active">
+    <h1 class="page-title">Dashboard</h1>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="dashboard-tables">
+      <div class="card">
+        <h2>Top Investors by Portfolio Value</h2>
+        <table id="top-investors-table">
+          <thead><tr><th>Investor</th><th>Type</th><th>Properties</th><th>Portfolio Value</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Recent Properties</h2>
+        <table id="recent-properties-table">
+          <thead><tr><th>Address</th><th>Type</th><th>Value</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Investors -->
+  <section id="page-investors" class="page">
+    <div class="page-header">
+      <h1 class="page-title">Investors</h1>
+      <button class="btn btn-primary" onclick="openInvestorModal()">+ Add Investor</button>
+    </div>
+    <div class="filters">
+      <input type="text" id="investor-search" placeholder="Search by name, email, company…" oninput="renderInvestors()" />
+      <select id="investor-status-filter" onchange="renderInvestors()">
+        <option value="">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="prospect">Prospect</option>
+      </select>
+    </div>
+    <div class="card">
+      <table id="investors-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Company</th><th>Type</th><th>Email</th>
+            <th>Phone</th><th>Properties</th><th>Portfolio Value</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Properties -->
+  <section id="page-properties" class="page">
+    <div class="page-header">
+      <h1 class="page-title">Properties</h1>
+      <button class="btn btn-primary" onclick="openPropertyModal()">+ Add Property</button>
+    </div>
+    <div class="filters">
+      <select id="property-status-filter" onchange="renderProperties()">
+        <option value="">All Statuses</option>
+        <option value="owned">Owned</option>
+        <option value="sold">Sold</option>
+        <option value="under-contract">Under Contract</option>
+      </select>
+      <select id="property-type-filter" onchange="renderProperties()">
+        <option value="">All Types</option>
+        <option value="residential">Residential</option>
+        <option value="commercial">Commercial</option>
+        <option value="industrial">Industrial</option>
+        <option value="land">Land</option>
+      </select>
+    </div>
+    <div class="card">
+      <table id="properties-table">
+        <thead>
+          <tr>
+            <th>Address</th><th>Investor</th><th>Type</th><th>Purchase Price</th>
+            <th>Current Value</th><th>Equity</th><th>Mo. Rent</th><th>Cap Rate</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- Investor Drawer -->
+<div id="investor-drawer" class="drawer hidden">
+  <div class="drawer-header">
+    <h2 id="drawer-investor-name"></h2>
+    <button class="btn-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+<div id="overlay" class="overlay hidden" onclick="closeDrawer(); closeModal();"></div>
+
+<!-- Investor Modal -->
+<div id="investor-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="investor-modal-title">Add Investor</h2>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <form id="investor-form" onsubmit="saveInvestor(event)">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input type="text" name="name" required /></div>
+        <div class="form-group"><label>Email *</label><input type="email" name="email" required /></div>
+        <div class="form-group"><label>Phone</label><input type="text" name="phone" /></div>
+        <div class="form-group"><label>Company</label><input type="text" name="company" /></div>
+        <div class="form-group">
+          <label>Investor Type</label>
+          <select name="investor_type">
+            <option value="individual">Individual</option>
+            <option value="institutional">Institutional</option>
+            <option value="fund">Fund</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="prospect">Prospect</option>
+          </select>
+        </div>
+        <div class="form-group full-width"><label>Notes</label><textarea name="notes" rows="3"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Investor</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Property Modal -->
+<div id="property-modal" class="modal hidden">
+  <div class="modal-content modal-wide">
+    <div class="modal-header">
+      <h2 id="property-modal-title">Add Property</h2>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <form id="property-form" onsubmit="saveProperty(event)">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Investor *</label>
+          <select name="investor_id" id="property-investor-select" required></select>
+        </div>
+        <div class="form-group full-width"><label>Street Address *</label><input type="text" name="address" required /></div>
+        <div class="form-group"><label>City</label><input type="text" name="city" /></div>
+        <div class="form-group"><label>State</label><input type="text" name="state" maxlength="2" /></div>
+        <div class="form-group"><label>ZIP Code</label><input type="text" name="zip_code" /></div>
+        <div class="form-group">
+          <label>Property Type</label>
+          <select name="property_type">
+            <option value="residential">Residential</option>
+            <option value="commercial">Commercial</option>
+            <option value="industrial">Industrial</option>
+            <option value="land">Land</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Purchase Price ($)</label><input type="number" name="purchase_price" step="0.01" /></div>
+        <div class="form-group"><label>Current Value ($)</label><input type="number" name="current_value" step="0.01" /></div>
+        <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" /></div>
+        <div class="form-group"><label>Square Feet</label><input type="number" name="square_feet" /></div>
+        <div class="form-group"><label>Units (multi-family)</label><input type="number" name="units" /></div>
+        <div class="form-group"><label>Monthly Rent ($)</label><input type="number" name="monthly_rent" step="0.01" /></div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="owned">Owned</option>
+            <option value="under-contract">Under Contract</option>
+            <option value="sold">Sold</option>
+          </select>
+        </div>
+        <div class="form-group full-width"><label>Notes</label><textarea name="notes" rows="3"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Property</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ── Data Layer (localStorage) ─────────────────────────────────────────────────
+
+const DB = {
+  load() {
+    const inv  = JSON.parse(localStorage.getItem('rv_investors')  || '[]');
+    const prop = JSON.parse(localStorage.getItem('rv_properties') || '[]');
+    return { investors: inv, properties: prop };
+  },
+  save(investors, properties) {
+    localStorage.setItem('rv_investors',  JSON.stringify(investors));
+    localStorage.setItem('rv_properties', JSON.stringify(properties));
+  },
+  nextId(arr) {
+    return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1;
+  },
+};
+
+function getData() { return DB.load(); }
+
+// Seed sample data on first load
+(function seedIfEmpty() {
+  const { investors, properties } = DB.load();
+  if (investors.length) return;
+
+  const inv = [
+    { id:1, name:'Margaret Holloway', email:'margaret@hollowaygroup.com', phone:'(212) 555-0101', company:'Holloway Group',           investor_type:'institutional', status:'active',   notes:'High-net-worth client focused on NYC multifamily assets.', created_at:'2019-01-15' },
+    { id:2, name:'Derek Nolan',        email:'derek.nolan@privatecap.com', phone:'(310) 555-0202', company:'Private Capital Partners', investor_type:'fund',          status:'active',   notes:'Fund manager. Prefers commercial / mixed-use in LA basin.', created_at:'2020-03-10' },
+    { id:3, name:'Sandra Kim',         email:'sandra.kim@gmail.com',       phone:'(415) 555-0303', company:'',                         investor_type:'individual',    status:'active',   notes:'Self-directed investor. Buy-and-hold residential strategy.', created_at:'2020-07-22' },
+    { id:4, name:'Apex Realty Fund III', email:'invest@apexfund.com',      phone:'(888) 555-0404', company:'Apex Real Estate Capital', investor_type:'fund',          status:'active',   notes:'', created_at:'2017-06-01' },
+    { id:5, name:'Thomas Vega',        email:'tvega@outlook.com',          phone:'(713) 555-0505', company:'',                         investor_type:'individual',    status:'prospect', notes:'Interested in Houston single-family rentals.', created_at:'2024-01-05' },
+  ];
+
+  const prop = [
+    { id:1,  investor_id:1, address:'245 Riverside Dr',    city:'New York',    state:'NY', zip_code:'10025', property_type:'residential', purchase_price:2800000, current_value:3400000, purchase_date:'2019-06-15', square_feet:3200,  units:8,  monthly_rent:22000, status:'owned',  notes:'' },
+    { id:2,  investor_id:1, address:'88 West 10th St',     city:'New York',    state:'NY', zip_code:'10011', property_type:'residential', purchase_price:1500000, current_value:1950000, purchase_date:'2020-03-01', square_feet:1800,  units:4,  monthly_rent:11000, status:'owned',  notes:'' },
+    { id:3,  investor_id:1, address:'530 Park Ave',        city:'New York',    state:'NY', zip_code:'10021', property_type:'commercial',  purchase_price:5200000, current_value:6100000, purchase_date:'2018-09-20', square_feet:8500,  units:null, monthly_rent:38000, status:'owned', notes:'' },
+    { id:4,  investor_id:2, address:'4500 Wilshire Blvd',  city:'Los Angeles', state:'CA', zip_code:'90010', property_type:'commercial',  purchase_price:3100000, current_value:3800000, purchase_date:'2021-01-10', square_feet:12000, units:null, monthly_rent:28000, status:'owned', notes:'' },
+    { id:5,  investor_id:2, address:'1120 Venice Blvd',    city:'Los Angeles', state:'CA', zip_code:'90291', property_type:'residential', purchase_price:950000,  current_value:1250000, purchase_date:'2022-05-05', square_feet:2200,  units:6,  monthly_rent:9500,  status:'owned',  notes:'' },
+    { id:6,  investor_id:3, address:'820 Fillmore St',     city:'San Francisco', state:'CA', zip_code:'94117', property_type:'residential', purchase_price:1100000, current_value:1380000, purchase_date:'2020-08-14', square_feet:1400, units:2,  monthly_rent:7200, status:'owned',  notes:'' },
+    { id:7,  investor_id:3, address:'360 Oak Grove Ave',   city:'Menlo Park',  state:'CA', zip_code:'94025', property_type:'residential', purchase_price:1450000, current_value:1700000, purchase_date:'2021-11-30', square_feet:1900,  units:1,  monthly_rent:6500,  status:'owned',  notes:'' },
+    { id:8,  investor_id:4, address:'1200 Brickell Ave',   city:'Miami',       state:'FL', zip_code:'33131', property_type:'commercial',  purchase_price:7500000, current_value:9200000, purchase_date:'2017-04-22', square_feet:22000, units:null, monthly_rent:65000, status:'owned', notes:'' },
+    { id:9,  investor_id:4, address:'3300 NW 36th St',     city:'Miami',       state:'FL', zip_code:'33142', property_type:'industrial',  purchase_price:2200000, current_value:2700000, purchase_date:'2019-07-08', square_feet:35000, units:null, monthly_rent:18000, status:'owned', notes:'' },
+    { id:10, investor_id:4, address:'500 Collins Ave',     city:'Miami Beach', state:'FL', zip_code:'33139', property_type:'residential', purchase_price:4100000, current_value:3900000, purchase_date:'2023-02-01', square_feet:6000,  units:12, monthly_rent:30000, status:'owned',  notes:'' },
+  ];
+
+  DB.save(inv, prop);
+})();
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+const fmt = {
+  currency: v => v != null && v !== '' ? '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}) : '—',
+  pct:      v => v != null ? v.toFixed(2) + '%' : '—',
+  date:     v => v ? new Date(v + 'T00:00:00').toLocaleDateString('en-US') : '—',
+};
+
+function badge(text, cls) {
+  const c = (cls || text || '').toString().replace(/\s+/g,'-').toLowerCase();
+  return `<span class="badge badge-${c}">${text || '—'}</span>`;
+}
+
+function setTbody(tableId, rows) {
+  document.querySelector(`#${tableId} tbody`).innerHTML = rows.join('');
+}
+
+function investorProperties(investorId, properties) {
+  return properties.filter(p => p.investor_id == investorId);
+}
+
+function portfolioValue(investorId, properties) {
+  return investorProperties(investorId, properties).reduce((s, p) => s + (Number(p.current_value) || 0), 0);
+}
+
+function capRate(p) {
+  if (!p.current_value || !p.monthly_rent) return null;
+  return (p.monthly_rent * 12 / p.current_value) * 100;
+}
+
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2000);
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.nav-links a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const page = a.dataset.page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    a.classList.add('active');
+    if (page === 'dashboard') renderDashboard();
+    if (page === 'investors') renderInvestors();
+    if (page === 'properties') renderProperties();
+  });
+});
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+function renderDashboard() {
+  const { investors, properties } = getData();
+  const owned = properties.filter(p => p.status === 'owned');
+
+  const totalValue   = owned.reduce((s, p) => s + (Number(p.current_value) || 0), 0);
+  const totalRent    = owned.reduce((s, p) => s + (Number(p.monthly_rent) || 0), 0);
+  const totalEquity  = owned.reduce((s, p) => s + ((Number(p.current_value)||0) - (Number(p.purchase_price)||0)), 0);
+  const activeInv    = investors.filter(i => i.status === 'active').length;
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Investors</div><div class="stat-value">${investors.length}</div><div class="stat-sub">${activeInv} active</div></div>
+    <div class="stat-card"><div class="stat-label">Total Properties</div><div class="stat-value">${properties.length}</div><div class="stat-sub">${owned.length} owned</div></div>
+    <div class="stat-card"><div class="stat-label">Portfolio Value</div><div class="stat-value">${fmt.currency(totalValue)}</div><div class="stat-sub">Equity: ${fmt.currency(totalEquity)}</div></div>
+    <div class="stat-card"><div class="stat-label">Monthly Rent</div><div class="stat-value">${fmt.currency(totalRent)}</div><div class="stat-sub">Annual: ${fmt.currency(totalRent*12)}</div></div>
+  `;
+
+  const sortedInv = [...investors].sort((a,b) => portfolioValue(b.id, properties) - portfolioValue(a.id, properties)).slice(0, 8);
+  setTbody('top-investors-table', sortedInv.map(i => {
+    const pv = portfolioValue(i.id, properties);
+    const pc = investorProperties(i.id, properties).length;
+    return `<tr>
+      <td><a href="#" onclick="viewInvestor(${i.id}); return false;" style="color:#6c63ff;font-weight:600">${i.name}</a></td>
+      <td>${badge(i.investor_type)}</td>
+      <td>${pc}</td>
+      <td>${fmt.currency(pv)}</td>
+    </tr>`;
+  }));
+
+  const recent = [...properties].reverse().slice(0, 8);
+  setTbody('recent-properties-table', recent.map(p => `
+    <tr>
+      <td>${p.address}${p.city ? ', ' + p.city : ''}</td>
+      <td>${badge(p.property_type)}</td>
+      <td>${fmt.currency(p.current_value)}</td>
+      <td>${badge(p.status, p.status)}</td>
+    </tr>
+  `));
+}
+
+// ── Investors ─────────────────────────────────────────────────────────────────
+
+function renderInvestors() {
+  const { investors, properties } = getData();
+  const q      = (document.getElementById('investor-search').value || '').toLowerCase();
+  const status = document.getElementById('investor-status-filter').value;
+
+  let list = investors;
+  if (q)      list = list.filter(i => (i.name+i.email+(i.company||'')).toLowerCase().includes(q));
+  if (status) list = list.filter(i => i.status === status);
+  list = list.slice().sort((a,b) => a.name.localeCompare(b.name));
+
+  setTbody('investors-table', list.length ? list.map(i => {
+    const pc = investorProperties(i.id, properties).length;
+    const pv = portfolioValue(i.id, properties);
+    return `<tr>
+      <td><a href="#" onclick="viewInvestor(${i.id}); return false;" style="font-weight:600;color:#6c63ff">${i.name}</a></td>
+      <td>${i.company || '—'}</td>
+      <td>${badge(i.investor_type)}</td>
+      <td>${i.email}</td>
+      <td>${i.phone || '—'}</td>
+      <td>${pc}</td>
+      <td>${fmt.currency(pv)}</td>
+      <td>${badge(i.status, i.status)}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-edit" onclick="openInvestorModal(${i.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteInvestor(${i.id})">Delete</button>
+      </div></td>
+    </tr>`;
+  }) : ['<tr><td colspan="9" style="text-align:center;color:#aaa;padding:30px">No investors found.</td></tr>']);
+}
+
+let currentInvestorId = null;
+
+function openInvestorModal(id) {
+  currentInvestorId = id || null;
+  const form = document.getElementById('investor-form');
+  form.reset();
+  document.getElementById('investor-modal-title').textContent = id ? 'Edit Investor' : 'Add Investor';
+
+  if (id) {
+    const { investors } = getData();
+    const inv = investors.find(i => i.id === id);
+    if (inv) {
+      Object.entries(inv).forEach(([k, v]) => {
+        const el = form.elements[k];
+        if (el && v != null) el.value = v;
+      });
+    }
+  }
+  showModal('investor-modal');
+}
+
+function saveInvestor(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const { investors, properties } = getData();
+
+  if (currentInvestorId) {
+    const idx = investors.findIndex(i => i.id === currentInvestorId);
+    investors[idx] = { ...investors[idx], ...data };
+  } else {
+    // Check for duplicate email
+    if (investors.find(i => i.email === data.email)) {
+      alert('An investor with that email already exists.');
+      return;
+    }
+    investors.push({ ...data, id: DB.nextId(investors), created_at: new Date().toISOString().slice(0,10) });
+  }
+
+  DB.save(investors, properties);
+  closeModal();
+  renderInvestors();
+  renderDashboard();
+  toast(currentInvestorId ? 'Investor updated.' : 'Investor added.');
+}
+
+function deleteInvestor(id) {
+  if (!confirm('Delete this investor and all their properties?')) return;
+  let { investors, properties } = getData();
+  investors  = investors.filter(i => i.id !== id);
+  properties = properties.filter(p => p.investor_id !== id);
+  DB.save(investors, properties);
+  renderInvestors();
+  renderDashboard();
+  toast('Investor deleted.');
+}
+
+// ── Investor Drawer ───────────────────────────────────────────────────────────
+
+function viewInvestor(id) {
+  const { investors, properties } = getData();
+  const inv = investors.find(i => i.id === id);
+  if (!inv) return;
+
+  document.getElementById('drawer-investor-name').textContent = inv.name;
+
+  const props = properties.filter(p => p.investor_id === id);
+  const propRows = props.map(p => {
+    const cr = capRate(p);
+    const equity = (Number(p.current_value)||0) - (Number(p.purchase_price)||0);
+    return `<tr>
+      <td>${p.address}</td>
+      <td>${badge(p.property_type)}</td>
+      <td>${fmt.currency(p.current_value)}</td>
+      <td>${fmt.currency(p.monthly_rent)}</td>
+      <td>${fmt.pct(cr)}</td>
+      <td>${badge(p.status, p.status)}</td>
+      <td><button class="btn btn-sm btn-edit" onclick="openPropertyModal(${p.id})">Edit</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="color:#aaa;text-align:center;padding:16px">No properties yet.</td></tr>';
+
+  const pv = portfolioValue(id, properties);
+
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="detail-section">
+      <h3>Contact Info</h3>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Email</label><span>${inv.email}</span></div>
+        <div class="detail-item"><label>Phone</label><span>${inv.phone || '—'}</span></div>
+        <div class="detail-item"><label>Company</label><span>${inv.company || '—'}</span></div>
+        <div class="detail-item"><label>Type</label><span>${inv.investor_type || '—'}</span></div>
+        <div class="detail-item"><label>Status</label><span>${badge(inv.status, inv.status)}</span></div>
+        <div class="detail-item"><label>Since</label><span>${fmt.date(inv.created_at)}</span></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h3>Portfolio Summary</h3>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Properties</label><span>${props.length}</span></div>
+        <div class="detail-item"><label>Portfolio Value</label><span>${fmt.currency(pv)}</span></div>
+      </div>
+    </div>
+    ${inv.notes ? `<div class="detail-section"><h3>Notes</h3><p style="color:#555;line-height:1.6">${inv.notes}</p></div>` : ''}
+    <div class="detail-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h3 style="margin:0">Properties</h3>
+        <button class="btn btn-sm btn-primary" onclick="openPropertyModal(null, ${id})">+ Add Property</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Address</th><th>Type</th><th>Value</th><th>Mo. Rent</th><th>Cap Rate</th><th>Status</th><th></th></tr></thead>
+          <tbody>${propRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('investor-drawer').classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+// ── Properties ────────────────────────────────────────────────────────────────
+
+function renderProperties() {
+  const { investors, properties } = getData();
+  const status = document.getElementById('property-status-filter').value;
+  const type   = document.getElementById('property-type-filter').value;
+
+  let list = [...properties].reverse();
+  if (status) list = list.filter(p => p.status === status);
+  if (type)   list = list.filter(p => p.property_type === type);
+
+  setTbody('properties-table', list.length ? list.map(p => {
+    const inv    = investors.find(i => i.id === p.investor_id);
+    const equity = (Number(p.current_value)||0) - (Number(p.purchase_price)||0);
+    const cr     = capRate(p);
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${p.address}</div>
+        <div style="font-size:0.78rem;color:#888">${[p.city, p.state, p.zip_code].filter(Boolean).join(', ')}</div>
+      </td>
+      <td>${inv ? `<a href="#" onclick="viewInvestor(${inv.id}); return false;" style="color:#6c63ff">${inv.name}</a>` : '—'}</td>
+      <td>${badge(p.property_type)}</td>
+      <td>${fmt.currency(p.purchase_price)}</td>
+      <td>${fmt.currency(p.current_value)}</td>
+      <td style="color:${equity>=0?'#2e7d32':'#c62828'}">${fmt.currency(equity)}</td>
+      <td>${fmt.currency(p.monthly_rent)}</td>
+      <td>${fmt.pct(cr)}</td>
+      <td>${badge(p.status, p.status)}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-edit" onclick="openPropertyModal(${p.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+      </div></td>
+    </tr>`;
+  }) : ['<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px">No properties found.</td></tr>']);
+}
+
+let currentPropertyId = null;
+
+function openPropertyModal(id, preselectedInvestorId) {
+  currentPropertyId = id || null;
+  const form = document.getElementById('property-form');
+  form.reset();
+  document.getElementById('property-modal-title').textContent = id ? 'Edit Property' : 'Add Property';
+
+  const { investors, properties } = getData();
+  const sel = document.getElementById('property-investor-select');
+  sel.innerHTML = investors.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+  if (preselectedInvestorId) sel.value = preselectedInvestorId;
+
+  if (id) {
+    const prop = properties.find(p => p.id === id);
+    if (prop) {
+      Object.entries(prop).forEach(([k, v]) => {
+        const el = form.elements[k];
+        if (el && v != null) el.value = v;
+      });
+    }
+  }
+  showModal('property-modal');
+}
+
+function saveProperty(e) {
+  e.preventDefault();
+  const raw = Object.fromEntries(new FormData(e.target));
+  const data = { ...raw, investor_id: Number(raw.investor_id) };
+  ['purchase_price','current_value','square_feet','units','monthly_rent'].forEach(k => {
+    data[k] = raw[k] !== '' ? Number(raw[k]) : null;
+  });
+  if (!data.purchase_date) data.purchase_date = null;
+
+  const { investors, properties } = getData();
+
+  if (currentPropertyId) {
+    const idx = properties.findIndex(p => p.id === currentPropertyId);
+    properties[idx] = { ...properties[idx], ...data };
+  } else {
+    properties.push({ ...data, id: DB.nextId(properties) });
+  }
+
+  DB.save(investors, properties);
+  closeModal();
+  renderProperties();
+  renderDashboard();
+  toast(currentPropertyId ? 'Property updated.' : 'Property added.');
+
+  // Refresh drawer if open
+  const drawer = document.getElementById('investor-drawer');
+  if (!drawer.classList.contains('hidden')) {
+    const name = document.getElementById('drawer-investor-name').textContent;
+    const { investors: inv2 } = getData();
+    const found = inv2.find(i => i.name === name);
+    if (found) viewInvestor(found.id);
+  }
+}
+
+function deleteProperty(id) {
+  if (!confirm('Delete this property?')) return;
+  const { investors, properties } = getData();
+  DB.save(investors, properties.filter(p => p.id !== id));
+  renderProperties();
+  renderDashboard();
+  toast('Property deleted.');
+}
+
+// ── Modal Helpers ─────────────────────────────────────────────────────────────
+
+function showModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('investor-modal').classList.add('hidden');
+  document.getElementById('property-modal').classList.add('hidden');
+  if (document.getElementById('investor-drawer').classList.contains('hidden')) {
+    document.getElementById('overlay').classList.add('hidden');
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('investor-drawer').classList.add('hidden');
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderDashboard();
+</script>
+</body>
+</html>
