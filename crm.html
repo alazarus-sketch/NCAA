@@ -144,6 +144,50 @@ tbody tr:last-child td { border-bottom: none; }
 
 .hidden { display: none !important; }
 
+/* ── Login Screen ── */
+#login-screen {
+  position: fixed; inset: 0; background: #f0f2f5;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+.login-card {
+  background: #fff; border-radius: 20px; padding: 44px 40px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.12); width: 100%; max-width: 420px;
+}
+.login-logo {
+  text-align: center; margin-bottom: 28px;
+  font-size: 1.5rem; font-weight: 700; color: #1a1a2e;
+}
+.login-logo .logo-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+.login-subtitle { font-size: 0.88rem; color: #888; text-align: center; margin-top: 4px; }
+.login-card .form-group { margin-bottom: 16px; }
+.login-card .form-group label { font-size: 0.82rem; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+.login-card .form-group input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #dde; border-radius: 10px;
+  font-size: 0.95rem; font-family: inherit; transition: border-color 0.2s;
+}
+.login-card .form-group input:focus { outline: none; border-color: #6c63ff; box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+.pw-input-wrap { position: relative; }
+.pw-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 1rem; color: #aaa; padding: 4px;
+}
+.pw-toggle:hover { color: #555; }
+.req-list { list-style: none; margin: 10px 0 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.req-list li { font-size: 0.78rem; color: #aaa; display: flex; align-items: center; gap: 5px; transition: color 0.2s; }
+.req-list li::before { content: '○'; font-size: 0.7rem; }
+.req-list li.met { color: #2e7d32; }
+.req-list li.met::before { content: '✓'; }
+.req-list li.fail { color: #c62828; }
+.req-list li.fail::before { content: '✗'; }
+.pw-strength { height: 4px; border-radius: 4px; background: #eee; margin-bottom: 14px; overflow: hidden; }
+.pw-strength-bar { height: 100%; border-radius: 4px; width: 0; transition: width 0.3s, background 0.3s; }
+.login-error { background: #fce4ec; color: #c62828; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; display: none; }
+.login-card .btn-primary { width: 100%; padding: 12px; font-size: 1rem; border-radius: 10px; margin-top: 4px; }
+.login-link { text-align: center; margin-top: 14px; font-size: 0.82rem; color: #888; }
+.login-link a { color: #6c63ff; text-decoration: none; font-weight: 600; cursor: pointer; }
+.login-link a:hover { text-decoration: underline; }
+
 /* ── Toast ── */
 .toast {
   position: fixed; bottom: 28px; right: 28px; z-index: 999;
@@ -154,6 +198,69 @@ tbody tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
+
+<!-- Login Screen -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="logo-icon">🏠</span>
+      RealVest CRM
+      <div class="login-subtitle" id="login-subtitle">Sign in to your account</div>
+    </div>
+
+    <div id="login-error" class="login-error"></div>
+
+    <!-- Login Form -->
+    <div id="login-form-wrap">
+      <div class="form-group">
+        <label for="login-pw">Password</label>
+        <div class="pw-input-wrap">
+          <input type="password" id="login-pw" placeholder="Enter your password" autocomplete="current-password" />
+          <button type="button" class="pw-toggle" onclick="togglePw('login-pw', this)">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+      <div class="login-link"><a onclick="switchToReset()">Forgot password?</a></div>
+    </div>
+
+    <!-- Set Password Form -->
+    <div id="set-form-wrap" style="display:none">
+      <div class="form-group">
+        <label for="set-pw">Create Password</label>
+        <div class="pw-input-wrap">
+          <input type="password" id="set-pw" placeholder="Create a strong password" autocomplete="new-password" oninput="checkReqs()" />
+          <button type="button" class="pw-toggle" onclick="togglePw('set-pw', this)">👁</button>
+        </div>
+      </div>
+      <div class="pw-strength"><div class="pw-strength-bar" id="pw-strength-bar"></div></div>
+      <ul class="req-list" id="req-list">
+        <li id="req-len">8+ characters</li>
+        <li id="req-upper">Uppercase letter</li>
+        <li id="req-lower">Lowercase letter</li>
+        <li id="req-num">Number</li>
+        <li id="req-special">Special character</li>
+        <li id="req-no-spaces">No spaces</li>
+      </ul>
+      <div class="form-group">
+        <label for="set-pw2">Confirm Password</label>
+        <div class="pw-input-wrap">
+          <input type="password" id="set-pw2" placeholder="Confirm password" autocomplete="new-password" oninput="checkReqs()" />
+          <button type="button" class="pw-toggle" onclick="togglePw('set-pw2', this)">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="set-pw-btn" onclick="doSetPassword()" disabled>Set Password</button>
+    </div>
+
+    <!-- Reset Confirmation -->
+    <div id="reset-form-wrap" style="display:none">
+      <p style="color:#555;font-size:0.9rem;margin-bottom:18px;line-height:1.6">
+        Resetting will clear all stored data (investors &amp; properties) and let you create a new password.
+      </p>
+      <button class="btn btn-danger" style="width:100%;padding:12px" onclick="doReset()">Reset &amp; Clear All Data</button>
+      <div class="login-link" style="margin-top:12px"><a onclick="switchToLogin()">← Back to sign in</a></div>
+    </div>
+  </div>
+</div>
 
 <nav class="sidebar">
   <div class="logo"><span class="logo-icon">🏠</span><span class="logo-text">RealVest CRM</span></div>
@@ -352,6 +459,133 @@ tbody tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+const PW_KEY = 'rv_pw_hash';
+
+const REQS = [
+  { id:'req-len',      test: p => p.length >= 8,                    label:'8+ characters' },
+  { id:'req-upper',    test: p => /[A-Z]/.test(p),                  label:'Uppercase letter' },
+  { id:'req-lower',    test: p => /[a-z]/.test(p),                  label:'Lowercase letter' },
+  { id:'req-num',      test: p => /[0-9]/.test(p),                  label:'Number' },
+  { id:'req-special',  test: p => /[^A-Za-z0-9]/.test(p),          label:'Special character' },
+  { id:'req-no-spaces',test: p => !/\s/.test(p) && p.length > 0,   label:'No spaces' },
+];
+
+function checkReqs() {
+  const pw  = document.getElementById('set-pw').value;
+  const pw2 = document.getElementById('set-pw2').value;
+  let met = 0;
+  REQS.forEach(r => {
+    const ok = r.test(pw);
+    const li = document.getElementById(r.id);
+    li.className = pw.length === 0 ? '' : ok ? 'met' : 'fail';
+    if (ok) met++;
+  });
+
+  // Strength bar
+  const bar = document.getElementById('pw-strength-bar');
+  const pct = Math.round((met / REQS.length) * 100);
+  bar.style.width = pct + '%';
+  bar.style.background = met <= 2 ? '#e53935' : met <= 4 ? '#fb8c00' : '#43a047';
+
+  const allMet = met === REQS.length;
+  const confirmed = pw2.length > 0 && pw === pw2;
+  document.getElementById('set-pw-btn').disabled = !(allMet && confirmed);
+  return allMet;
+}
+
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function clearLoginError() {
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function switchToReset() {
+  clearLoginError();
+  document.getElementById('login-form-wrap').style.display = 'none';
+  document.getElementById('set-form-wrap').style.display   = 'none';
+  document.getElementById('reset-form-wrap').style.display = 'block';
+  document.getElementById('login-subtitle').textContent    = 'Reset your account';
+}
+
+function switchToLogin() {
+  clearLoginError();
+  document.getElementById('reset-form-wrap').style.display = 'none';
+  document.getElementById('set-form-wrap').style.display   = 'none';
+  document.getElementById('login-form-wrap').style.display = 'block';
+  document.getElementById('login-subtitle').textContent    = 'Sign in to your account';
+}
+
+async function doLogin() {
+  clearLoginError();
+  const pw   = document.getElementById('login-pw').value;
+  if (!pw) { showLoginError('Please enter your password.'); return; }
+  const hash = await sha256(pw);
+  if (hash === localStorage.getItem(PW_KEY)) {
+    sessionStorage.setItem('rv_auth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+  } else {
+    showLoginError('Incorrect password. Please try again.');
+    document.getElementById('login-pw').value = '';
+    document.getElementById('login-pw').focus();
+  }
+}
+
+async function doSetPassword() {
+  clearLoginError();
+  const pw = document.getElementById('set-pw').value;
+  if (!checkReqs()) { showLoginError('Password does not meet all requirements.'); return; }
+  localStorage.setItem(PW_KEY, await sha256(pw));
+  sessionStorage.setItem('rv_auth', '1');
+  document.getElementById('login-screen').style.display = 'none';
+}
+
+function doReset() {
+  if (!confirm('This will permanently delete ALL investors and properties. Are you sure?')) return;
+  localStorage.clear();
+  sessionStorage.clear();
+  location.reload();
+}
+
+// Allow Enter key on login form
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('set-pw2').addEventListener('keydown', e => { if (e.key === 'Enter') doSetPassword(); });
+});
+
+// Init auth state
+(function initAuth() {
+  const hasPw   = !!localStorage.getItem(PW_KEY);
+  const isAuthed = sessionStorage.getItem('rv_auth') === '1';
+
+  if (isAuthed) {
+    document.getElementById('login-screen').style.display = 'none';
+    return;
+  }
+  if (!hasPw) {
+    // First run – show set-password form
+    document.getElementById('login-form-wrap').style.display = 'none';
+    document.getElementById('set-form-wrap').style.display   = 'block';
+    document.getElementById('login-subtitle').textContent    = 'Create a password to get started';
+  }
+})();
+
 // ── Data Layer (localStorage) ─────────────────────────────────────────────────
 
 const DB = {
